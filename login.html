@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 | Soberlog</title>
+    <style>
+        /* ================= 基础重置与布局 ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; background-color: #f0f2f5; overflow: hidden;
+        }
+
+        .login-container {
+            display: flex; width: 900px; height: 550px; 
+            background: #ffffff; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* 左侧角色区域 */
+        .left-panel {
+            flex: 1; background-color: #f8f9fa; position: relative;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 50px; overflow: hidden;
+        }
+
+        /* 右侧表单区域 */
+        .right-panel {
+            width: 400px; padding: 60px 40px; display: flex; flex-direction: column; justify-content: center;
+        }
+
+        /* ================= 表单样式 ================= */
+        .right-panel h2 { font-size: 28px; color: #333; margin-bottom: 8px; font-weight: 600; text-align: center; }
+        .right-panel p { font-size: 14px; color: #666; margin-bottom: 30px; text-align: center; }
+        
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; font-size: 13px; color: #555; margin-bottom: 8px; font-weight: 500; }
+        .input-group input {
+            width: 100%; padding: 12px 15px; border: 1.5px solid #e1e5ee; border-radius: 8px;
+            font-size: 15px; transition: border-color 0.3s; background: #fff;
+        }
+        .input-group input:focus { outline: none; border-color: #f27a33; }
+        
+        .toggle-pwd {
+            position: absolute; right: 15px; top: 38px; cursor: pointer; color: #888;
+            background: none; border: none; font-size: 18px;
+        }
+
+        .actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 13px; }
+        .actions label { display: flex; align-items: center; gap: 5px; color: #666; cursor: pointer; }
+        .actions a { color: #f27a33; text-decoration: none; font-weight: 500; }
+
+        .login-btn {
+            width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 15px;
+        }
+        .login-btn:hover { background: #333; transform: translateY(-2px); }
+
+        .google-btn {
+            width: 100%; padding: 12px; background: #fff; color: #333; border: 1.5px solid #e1e5ee; border-radius: 8px;
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .google-btn:hover { background: #f8f9fa; }
+        .signup-text { text-align: center; font-size: 13px; color: #666; margin-top: 20px; }
+        .signup-text a { color: #f27a33; text-decoration: none; font-weight: 600; }
+
+        /* ================= 角色 CSS 绘画与布局 ================= */
+        .monsters { 
+            position: relative; 
+            width: 350px; 
+            height: 300px; 
+            transform: scale(1.50); /* 核心魔法：整体无损放大 1.35 倍 */
+            transform-origin: bottom center; /* 锚点设在底部，保证放大后脚依然贴地 */
+        }
+        .monster { position: absolute; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* 眼睛通用样式 */
+        .eyes { display: flex; gap: 12px; position: absolute; }
+        .eye { width: 14px; height: 14px; background: #fff; border-radius: 50%; position: relative; overflow: hidden; transition: height 0.3s, transform 0.3s; }
+        .pupil { width: 6px; height: 6px; background: #000; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: transform 0.1s ease-out; }
+        .mouth { position: absolute; border: 2px solid #000; border-color: transparent transparent #000 transparent; border-radius: 50%; transition: 0.3s; }
+
+        /* 1. 紫色长方形 (略带傲娇) */
+        .purple { width: 90px; height: 220px; background: #6b4ce6; border-radius: 12px; bottom: 0; left: 30px; z-index: 1; }
+        .purple .eyes { top: 40px; left: 25px; gap: 15px; }
+        .purple .mouth { width: 20px; height: 10px; top: 70px; left: 35px; border-color: transparent transparent #000 transparent; }
+
+        /* 2. 黑色竖矩形 (冷静呆萌) */
+        .black { width: 50px; height: 160px; background: #222; border-radius: 6px; bottom: 0; left: 160px; z-index: 2; }
+        .black .eyes { top: 30px; left: 8px; gap: 8px; }
+        .black .mouth { width: 10px; height: 2px; background: #fff; top: 60px; left: 20px; border: none; border-radius: 2px; }
+
+        /* 3. 黄色圆角矩形 (温和内敛) */
+        .yellow { width: 80px; height: 130px; background: #f4d03f; border-radius: 40px 40px 10px 10px; bottom: 0; left: 230px; z-index: 3; }
+        .yellow .eyes { top: 40px; left: 20px; gap: 12px; }
+        .yellow .mouth { width: 16px; height: 2px; background: #000; top: 70px; left: 32px; border: none; border-radius: 2px; }
+
+        /* 4. 橙色半圆 (活泼开朗，最前面) */
+        .orange { width: 200px; height: 110px; background: #f27a33; border-radius: 100px 100px 10px 10px; bottom: 0; left: 10px; z-index: 4; }
+        .orange .eyes { top: 40px; left: 70px; gap: 20px; }
+        .orange .eye { width: 18px; height: 18px; }
+        .orange .pupil { width: 8px; height: 8px; }
+        .orange .mouth { width: 24px; height: 12px; top: 70px; left: 88px; }
+
+        /* ================= 核心互动状态 ================= */
+        
+        /* 状态: 聚焦 Email (夸张扭头盯着) */
+        body.focus-email .monster { transform: translateX(15px) rotate(5deg); }
+        body.focus-email .eye { transform: scale(1.2); }
+        
+        /* 状态: 聚焦 Password (闭眼不看) */
+        body.focus-password .purple .eye, 
+        body.focus-password .black .eye, 
+        body.focus-password .yellow .eye,
+        body.focus-password .orange .eye { height: 2px; transform: translateY(6px); }
+        body.focus-password .pupil { display: none; }
+        body.focus-password .monster { transform: translateX(-5px); }
+
+        /* 状态: 点击显示密码 (橙色偷偷睁眼，其他紧闭) */
+        body.show-password .purple .eye, 
+        body.show-password .black .eye, 
+        body.show-password .yellow .eye { height: 2px; transform: translateY(6px); }
+        body.show-password .orange .eye:nth-child(2) { height: 18px; transform: translateY(0); } /* 橙色右眼睁开偷看 */
+        body.show-password .orange .eye:nth-child(2) .pupil { display: block; transform: translate(2px, -2px); }
+        body.show-password .monster { transform: translateX(10px); }
+
+        /* 状态: 登录成功 (开心跳跃) */
+        body.login-success .monster { animation: bounce 0.5s ease; }
+        body.login-success .mouth { border-color: transparent transparent #000 transparent; transform: scale(1.2); }
+        body.login-success .black .mouth { background: #000; height: 10px; border-radius: 0 0 10px 10px; }
+
+        /* 状态: 登录失败 (摇头难过) */
+        body.login-fail .monster { animation: shake 0.4s ease; }
+        body.login-fail .mouth { border-color: #000 transparent transparent transparent; transform: translateY(5px); }
+        body.login-fail .black .mouth { background: transparent; border: 2px solid #fff; border-color: #fff transparent transparent transparent; height: 10px; border-radius: 10px 10px 0 0; }
+
+        /* 动画关键帧 */
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="left-panel">
+        <div class="monsters">
+            <div class="monster purple"><div class="eyes"><div class="eye"><div class="pupil"></div></div><div class="eye"><div class="pupil"></div></div></div><div class="mouth"></div></div>
+            <div class="monster black"><div class="eyes"><div class="eye"><div class="pupil"></div></div><div class="eye"><div class="pupil"></div></div></div><div class="mouth"></div></div>
+            <div class="monster yellow"><div class="eyes"><div class="eye"><div class="pupil"></div></div><div class="eye"><div class="pupil"></div></div></div><div class="mouth"></div></div>
+            <div class="monster orange"><div class="eyes"><div class="eye"><div class="pupil"></div></div><div class="eye"><div class="pupil"></div></div></div><div class="mouth"></div></div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <h2>Welcome back!</h2>
+        <p>Please enter your details</p>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+                <button type="button" class="toggle-pwd" id="togglePwd">👁️</button>
+            </div>
+            <div class="actions">
+                <label><input type="checkbox"> Remember for 30 days</label>
+                <a href="#">Forgot password?</a>
+            </div>
+            <button type="submit" class="login-btn">Log In</button>
+            <button type="button" class="google-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Log in with Google
+            </button>
+            <div class="signup-text">Don't have an account? <a href="#">Sign up</a></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ================= JavaScript 交互逻辑 =================
+    const emailInput = document.getElementById('email');
+    const pwdInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('togglePwd');
+    const form = document.getElementById('loginForm');
+    const pupils = document.querySelectorAll('.pupil');
+    let isPasswordMode = false;
+
+    // 1. 眼球跟随鼠标轨迹计算
+    document.addEventListener('mousemove', (e) => {
+        // 如果正在闭眼（输入密码时），不计算眼球跟随
+        if(document.body.classList.contains('focus-password') && !document.body.classList.contains('show-password')) return;
+
+        pupils.forEach(pupil => {
+            const eye = pupil.parentElement;
+            const eyeRect = eye.getBoundingClientRect();
+            // 计算眼睛中心坐标
+            const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+            const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+            
+            // 计算鼠标与眼睛中心的角度
+            const angle = Math.atan2(e.clientY - eyeCenterY, e.clientX - eyeCenterX);
+            // 限制眼球移动半径，防止跑出眼眶
+            const maxDistance = (eyeRect.width / 2) - (pupil.offsetWidth / 2);
+            // 计算实际移动距离 (鼠标越远，眼球偏移越大，但受 maxDistance 限制)
+            const distance = Math.min(maxDistance, Math.hypot(e.clientX - eyeCenterX, e.clientY - eyeCenterY) / 15);
+            
+            const px = Math.cos(angle) * distance;
+            const py = Math.sin(angle) * distance;
+            
+            // 如果是橙色偷看模式，左眼闭合，不计算左眼
+            if (document.body.classList.contains('show-password') && eye.parentElement.parentElement.classList.contains('orange')) {
+                // 只有睁开的眼睛跟随
+                pupil.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+            } else {
+                pupil.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+            }
+        });
+    });
+
+    // 2. 交互状态监听
+    // 聚焦账号框
+    emailInput.addEventListener('focus', () => {
+        document.body.className = 'focus-email';
+    });
+    emailInput.addEventListener('blur', () => {
+        document.body.classList.remove('focus-email');
+    });
+
+    // 聚焦密码框
+    pwdInput.addEventListener('focus', () => {
+        document.body.className = isPasswordMode ? 'show-password' : 'focus-password';
+    });
+    pwdInput.addEventListener('blur', () => {
+        document.body.classList.remove('focus-password', 'show-password');
+    });
+
+    // 切换密码可见性 (小怪物偷看逻辑)
+    toggleBtn.addEventListener('click', () => {
+        if (pwdInput.type === 'password') {
+            pwdInput.type = 'text';
+            isPasswordMode = true;
+            document.body.className = 'show-password';
+            toggleBtn.innerText = '🙈';
+        } else {
+            pwdInput.type = 'password';
+            isPasswordMode = false;
+            document.body.className = 'focus-password';
+            toggleBtn.innerText = '👁️';
+        }
+    });
+
+    // 3. 模拟登录结果反馈
+    form.addEventListener('submit', (e) => {
+        e.preventDefault(); // 阻止默认提交刷新页面
+        document.body.className = ''; // 清除之前的状态
+
+        const email = emailInput.value;
+        const pwd = pwdInput.value;
+
+        // 这里做一个简单的模拟：密码输入 '123456' 算成功，其他算失败
+       if (pwd === '123456') { // 密码可以自己随便定
+            document.body.classList.add('login-success');
+            // 延迟 800 毫秒，让小怪物开心地跳完，然后再跳转
+            setTimeout(() => {
+                window.location.href = 'index.html'; // 核心：跳转到你的主页
+            }, 800); 
+        } else {
+            // ... 失败的逻辑保持不变
+            document.body.classList.add('login-fail');
+            setTimeout(() => {
+                document.body.classList.remove('login-fail');
+            }, 600);
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -11,7 +11,9 @@
         a { text-decoration: none; color: inherit; }
         
         /* ================= 顶部导航栏 ================= */
+        
         nav {
+            
             position: fixed; top: 0; width: 100%; padding: 20px 50px;
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); z-index: 1000;
@@ -101,18 +103,22 @@
 </head>
 <body>
 
-    <nav id="navbar">
-        <div class="logo" style="font-weight: bold; font-size: 1.2rem;">S.H.R</div>
-        <ul class="nav-links">
-            <li><a href="#hero">关于我</a></li>
-            <li><a href="#skills">能力与热爱</a></li>
-            <li><a href="#gallery">摄影视界</a></li>
-            <li><a href="#music">优美旋律</a></li>
-            <li><a href="#contact">与我交流</a></li>
-        </ul>
+   <nav id="navbar">
+    <div class="logo" style="font-weight: bold; font-size: 1.2rem;">S.H.R</div>
+    <ul class="nav-links">
+        <li><a href="#hero">关于我</a></li>
+        <li><a href="#skills">能力与热爱</a></li>
+        <li><a href="#gallery">摄影视界</a></li>
+        <li><a href="#music">优美旋律</a></li>
+        <li><a href="#contact">与我交流</a></li>
+    </ul>
+    <div style="display: flex; align-items: center; gap: 20px;">
         <div class="lang">CN / EN</div>
-    </nav>
-
+        <a href="login.html" style="border: 1px solid rgba(255,255,255,0.3); padding: 6px 18px; border-radius: 20px; font-size: 14px; transition: 0.3s; text-decoration: none; color: inherit;">
+            登录 / 注册
+        </a>
+    </div>
+</nav>
     <header id="hero">
         <div class="hero-layer bottom-layer">
             <div class="parallax-wrapper">
@@ -159,7 +165,23 @@
             <div class="photo-item"><img src="images/AAA888.jpg" alt="风景照8"></div>
         </div>
     </section>
-
+<section id="footprint-portal" style="margin: 40px 0;">
+        <style>
+            /* 给传送门加一个鼠标悬浮上浮的优雅动画 */
+            .portal-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+            }
+        </style>
+        <h2 class="section-title">行摄足迹</h2>
+        <div style="display: flex; justify-content: center; padding: 0 20px;">
+            <a href="footprint.html" class="portal-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 800px; background: #ffffff; border-radius: 16px; padding: 40px 20px; text-decoration: none; color: #333; box-shadow: 0 8px 25px rgba(0,0,0,0.04); transition: transform 0.4s, box-shadow 0.4s; border: 1px solid #f0f0f0;">
+                <div style="font-size: 3.5rem; margin-bottom: 15px;">🧭</div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 10px;">探索动态足迹地图</h3>
+                <p style="color: #888; font-size: 1rem; margin: 0;">点击进入全屏沉浸模式，点亮城市并翻转相片故事</p>
+            </a>
+        </div>
+    </section>
     <section id="music">
         <h2 class="section-title">优美旋律</h2>
         <div class="music-grid">

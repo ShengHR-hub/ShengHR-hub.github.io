@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>足迹 | Soberlog</title>
+    <script src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/province/shanxi1.js"></script>
+    
+    <style>
+        body { margin: 0; padding: 0; background-color: #121212; color: #ffffff; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .back-btn { position: absolute; top: 30px; left: 40px; color: #888; text-decoration: none; font-size: 1.2rem; z-index: 100; transition: color 0.3s; }
+        .back-btn:hover { color: #fff; }
+        
+        #back-to-china {
+            display: none; position: absolute; top: 70px; left: 40px; 
+            background: rgba(255, 255, 255, 0.1); border: 1px solid #444; color: #ccc; 
+            padding: 8px 16px; cursor: pointer; border-radius: 6px; z-index: 100; transition: 0.3s;
+        }
+        #back-to-china:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+        
+        #map-container { width: 100vw; height: 100vh; }
+
+        /* ================= 绝美的记忆交互卡片 ================= */
+        #story-card {
+            display: none; 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 340px; min-height: 240px;
+            background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); z-index: 200;
+            opacity: 0; transition: opacity 0.4s ease;
+            overflow: hidden; /* 让照片圆角贴合边框 */
+        }
+
+        /* 关灯按钮放在最上层 */
+        .close-btn {
+            position: absolute; top: 12px; right: 15px; font-size: 1.8rem; 
+            color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); cursor: pointer; 
+            transition: 0.3s; z-index: 210;
+        }
+        .close-btn:hover { transform: scale(1.1); }
+
+        /* 照片层（正面） */
+        #card-front {
+            width: 100%; height: 100%; cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        #story-img {
+            width: 100%; height: 240px; object-fit: cover; display: block;
+        }
+        /* 提示点击的悬浮字 */
+        .hint-text {
+            position: absolute; bottom: 15px; left: 0; width: 100%; text-align: center;
+            font-size: 0.85rem; color: rgba(255,255,255,0.7); text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        /* 文字层（背面） */
+        #card-back {
+            display: none; opacity: 0; cursor: pointer;
+            padding: 40px 25px; text-align: center;
+            transition: opacity 0.5s ease;
+        }
+        #story-title { margin: 0 0 15px 0; font-size: 1.5rem; color: #fff; font-weight: 500; letter-spacing: 2px; }
+        #story-desc { margin: 0; font-size: 1rem; color: #ccc; line-height: 1.8; text-align: justify; }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">← 返回 Soberlog</a>
+    <button id="back-to-china">← 返回全国地图</button>
+    <div id="map-container"></div>
+
+    <div id="story-card">
+        <span class="close-btn" id="close-card">×</span>
+        
+        <div id="card-front">
+            <img id="story-img" src="" alt="记忆碎片">
+            <div class="hint-text">点击翻阅回忆</div>
+        </div>
+        
+        <div id="card-back">
+            <h3 id="story-title">城市名字</h3>
+            <p id="story-desc">回忆...</p>
+            <div style="margin-top: 20px; font-size: 0.8rem; color: #666;">点击返回照片</div>
+        </div>
+    </div>
+
+    <script>
+        var myChart = echarts.init(document.getElementById('map-container'));
+
+        // 1. 数据升级：增加 province 字段，并加入渭南
+        var myFootprints = [
+            { name: '北京', value: [116.405285, 39.904989], province: '北京' },
+            { name: '西安', value: [108.948024, 34.263161], province: '陕西' },
+            { name: '渭南', value: [109.502882, 34.499381], province: '陕西' }
+        ];
+
+        // 2. 故事库升级：加入华山回忆
+        var cityStories = {
+            '北京': { title: '初见北平', desc: '红墙金瓦，在快节奏的都市里寻找历史的厚重感。', img: 'images/AAA111.jpg' },
+            '西安': { title: '长安遗梦', desc: '十三朝古都，吹吹明城墙的晚风，感受大唐的盛世余音。', img: 'images/AAA222.jpg' },
+            '渭南': { title: '华山论剑', desc: '奇险天下第一山。夜爬华山，看破晓的第一缕朝阳刺破云海。', img: 'images/AAA333.jpg' } // 请确保你有 AAA333.jpg 这个文件
+        };
+
+        var option = {
+            tooltip: { trigger: 'item', formatter: '{b}' },
+            geo: {
+                map: 'china', roam: true, zoom: 1.2,
+                label: { emphasis: { show: false } },
+                itemStyle: {
+                    normal: { areaColor: '#2a2a2a', borderColor: '#444', borderWidth: 1 },
+                    emphasis: { areaColor: '#3a3a3a' }
+                }
+            },
+            series: [{
+                name: '足迹', type: 'effectScatter', coordinateSystem: 'geo',
+                data: myFootprints, symbolSize: 12, showEffectOn: 'render',
+                rippleEffect: { brushType: 'stroke', scale: 4 },
+                label: { normal: { show: true, formatter: '{b}', position: 'right', color: '#fff', fontSize: 14 } },
+                itemStyle: { normal: { color: '#00e5ff', shadowBlur: 10, shadowColor: '#00e5ff' } }
+            }]
+        };
+
+        myChart.setOption(option);
+        
+        var backBtn = document.getElementById('back-to-china');
+        var storyCard = document.getElementById('story-card');
+        var closeCardBtn = document.getElementById('close-card');
+        var cardFront = document.getElementById('card-front');
+        var cardBack = document.getElementById('card-back');
+
+        // ================= 地图点击逻辑（修复下钻消失问题） =================
+        myChart.on('click', function (params) {
+            
+            // 点击发光城市
+            if (params.seriesType === 'effectScatter') {
+                var story = cityStories[params.name];
+                if (story) {
+                    // 加载内容
+                    document.getElementById('story-img').src = story.img;
+                    document.getElementById('story-title').innerText = story.title;
+                    document.getElementById('story-desc').innerText = story.desc;
+                    
+                    // 每次打开卡片，重置为显示照片(正面)
+                    cardFront.style.display = 'block'; cardFront.style.opacity = '1';
+                    cardBack.style.display = 'none'; cardBack.style.opacity = '0';
+                    
+                    // 弹出卡片
+                    storyCard.style.display = 'block';
+                    setTimeout(() => { storyCard.style.opacity = '1'; }, 10);
+                }
+            } 
+            // 点击陕西省下钻
+            else if (params.name === '陕西' && option.geo.map === 'china') {
+                option.geo.map = '陕西';          
+                // 💡 核心修复：只保留属于陕西的坐标点，不再清空所有！
+                var shaanxiPoints = myFootprints.filter(p => p.province === '陕西');
+                option.series[0].data = shaanxiPoints; 
+                
+                myChart.setOption(option, true);  
+                backBtn.style.display = 'block';
+                closeCard(); // 切换地图时关掉卡片
+            }
+        });
+
+        // ================= 照片<->文字 淡化切换逻辑 =================
+        cardFront.addEventListener('click', function() {
+            cardFront.style.opacity = '0'; // 照片先变透明
+            setTimeout(() => {
+                cardFront.style.display = 'none'; // 彻底隐藏照片
+                cardBack.style.display = 'block'; // 调出文字层
+                setTimeout(() => cardBack.style.opacity = '1', 50); // 文字淡入
+            }, 500); // 这里的 500 对应 CSS 里的 0.5s 动画时间
+        });
+
+        cardBack.addEventListener('click', function() {
+            cardBack.style.opacity = '0'; // 文字先变透明
+            setTimeout(() => {
+                cardBack.style.display = 'none'; 
+                cardFront.style.display = 'block'; 
+                setTimeout(() => cardFront.style.opacity = '1', 50); // 照片淡入
+            }, 500);
+        });
+
+        // ================= 关闭卡片与返回逻辑 =================
+        function closeCard() {
+            storyCard.style.opacity = '0';
+            setTimeout(() => { storyCard.style.display = 'none'; }, 400);
+        }
+        closeCardBtn.addEventListener('click', closeCard);
+
+        backBtn.addEventListener('click', function() {
+            option.geo.map = 'china';             
+            // 💡 返回全国时，把所有城市数据还回来
+            option.series[0].data = myFootprints; 
+            myChart.setOption(option, true);      
+            backBtn.style.display = 'none';       
+        });
+
+        window.addEventListener('resize', function() { myChart.resize(); });
+    </script>
+
+</body>
+</html>
