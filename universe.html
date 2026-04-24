@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.H.R | 宇宙枢纽</title>
+    <style>
+        /* 消除所有默认边距，让 3D 画布撑满全屏 */
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* 悬浮提示文本 */
+        #tooltip {
+            position: absolute; top: -100px; left: 0; color: #fff; background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 4px;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; font-size: 14px; letter-spacing: 2px;
+            backdrop-filter: blur(4px); z-index: 10;
+        }
+
+        /* 左上角极简 Logo */
+        .logo { position: absolute; top: 30px; left: 50px; color: #fff; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; z-index: 10; opacity: 0.8; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <div class="logo">S.H.R</div>
+    <div id="tooltip">目标站点</div>
+
+    <script>
+        // ================= 1. 场景初始化 =================
+        const scene = new THREE.Scene();
+        // 添加极其深邃的宇宙黑雾，远处的星星会逐渐隐没
+        scene.fog = new THREE.FogExp2(0x020206, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+        camera.position.z = 800;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // ================= 2. 核心魔法：纯代码生成发光粒子贴图 =================
+        // 为了不依赖外部图片导致报错，我们用 Canvas 画一个带有柔和光晕的圆球作为星星的材质
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const starTexture = createGlowTexture();
+
+        // ================= 3. 生成海量背景繁星 =================
+        const bgStarsCount = 8000;
+        const bgGeometry = new THREE.BufferGeometry();
+        const bgPositions = new Float32Array(bgStarsCount * 3);
+        const bgColors = new Float32Array(bgStarsCount * 3);
+
+        for (let i = 0; i < bgStarsCount; i++) {
+            // 在一个巨大的球体空间内随机分布星星
+            const r = 800 + Math.random() * 1200;
+            const theta = 2 * Math.PI * Math.random();
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            bgPositions[i * 3] = x;
+            bgPositions[i * 3 + 1] = y;
+            bgPositions[i * 3 + 2] = z;
+
+            // 给背景星星赋予微妙的灰蓝色调
+            const color = new THREE.Color();
+            color.setHSL(0.6, 0.2, Math.random() * 0.5 + 0.5);
+            bgColors[i * 3] = color.r;
+            bgColors[i * 3 + 1] = color.g;
+            bgColors[i * 3 + 2] = color.b;
+        }
+
+        bgGeometry.setAttribute('position', new THREE.BufferAttribute(bgPositions, 3));
+        bgGeometry.setAttribute('color', new THREE.BufferAttribute(bgColors, 3));
+
+        const bgMaterial = new THREE.PointsMaterial({
+            size: 6, // 背景星星大小
+            map: starTexture,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending, // 叠加发光模式
+            depthWrite: false
+        });
+
+        const bgStarSystem = new THREE.Points(bgGeometry, bgMaterial);
+        scene.add(bgStarSystem);
+
+        // ================= 4. 设置特殊的枢纽星 (可点击跳转) =================
+        const hubsData = [
+            { name: '摄影视界', color: 0x00e5ff, pos: [-150, 80, 200], link: '#' },  // 青色
+            { name: '动态足迹', color: 0xffaa00, pos: [200, 50, 100], link: 'login.html' }, // 琥珀色
+            { name: '优美旋律', color: 0xb026ff, pos: [50, -120, 300], link: '#' }, // 紫色
+            { name: '关于我', color: 0x00ff88, pos: [-200, -80, 50], link: '#' }    // 翠绿色
+        ];
+
+        const hubGroup = new THREE.Group();
+        const hubInteractables = []; // 用于射线检测点击
+
+        hubsData.forEach(data => {
+            // 给枢纽星做个稍微大一点的几何体
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0], 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 45, // 枢纽星显著偏大
+                map: starTexture,
+                color: data.color,
+                transparent: true,
+                opacity: 0.9,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            const point = new THREE.Points(geometry, material);
+            point.position.set(...data.pos);
+            
+            // 储存自定义数据供点击时读取
+            point.userData = { name: data.name, link: data.link, baseSize: 45 };
+            
+            hubGroup.add(point);
+            hubInteractables.push(point);
+        });
+        scene.add(hubGroup);
+
+        // ================= 5. 交互：鼠标悬停与点击探测 (Raycaster) =================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        let hoveredHub = null;
+
+        window.addEventListener('mousemove', (event) => {
+            // 将鼠标坐标归一化到 -1 到 +1 之间
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // 移动提示框
+            tooltip.style.left = event.clientX + 15 + 'px';
+            tooltip.style.top = event.clientY + 15 + 'px';
+        });
+
+        window.addEventListener('click', () => {
+            if (hoveredHub) {
+                // 点击枢纽星，进行跳转
+                window.location.href = hoveredHub.userData.link;
+            }
+        });
+
+        // ================= 6. 响应窗口调整 =================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ================= 7. 动画循环与鼠标视差控制 =================
+        let targetX = 0;
+        let targetY = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 整个星空极其缓慢的自转
+            bgStarSystem.rotation.y -= 0.0002;
+            bgStarSystem.rotation.x -= 0.0001;
+            
+            // 枢纽星组自转
+            hubGroup.rotation.y += 0.0005;
+
+            // 鼠标移动产生 3D 摄像机视差偏移 (更具沉浸感)
+            targetX = mouse.x * 100;
+            targetY = mouse.y * 100;
+            camera.position.x += (targetX - camera.position.x) * 0.02;
+            camera.position.y += (targetY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+
+            // 射线探测：检测鼠标是否悬停在特定的枢纽星上
+            raycaster.setFromCamera(mouse, camera);
+            // 因为使用的是 Points 材质，需要设置一下检测阈值（容错率）
+            raycaster.params.Points.threshold = 20; 
+            
+            const intersects = raycaster.intersectObjects(hubInteractables);
+
+            if (intersects.length > 0) {
+                if (hoveredHub !== intersects[0].object) {
+                    hoveredHub = intersects[0].object;
+                    document.body.style.cursor = 'pointer';
+                    tooltip.innerText = hoveredHub.userData.name;
+                    tooltip.style.opacity = '1';
+                    // 悬停时让星星呼吸放大
+                    gsap.to(hoveredHub.material, { size: hoveredHub.userData.baseSize * 1.5, duration: 0.3 });
+                }
+            } else {
+                if (hoveredHub) {
+                    // 移开时恢复原状
+                    gsap.to(hoveredHub.material, { size: hoveredHub.userData.baseSize, duration: 0.3 });
+                    document.body.style.cursor = 'default';
+                    tooltip.style.opacity = '0';
+                    hoveredHub = null;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+
+</body>
+</html>

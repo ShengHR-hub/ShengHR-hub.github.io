@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.H.R | 进入宇宙</title>
+    <title>S.H.R | 宇宙入口 - 极致深空版</title>
     <style>
         /* ================= 基础重置 ================= */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
-        /* 锁定屏幕，禁止滚动 */
-        body { overflow: hidden; background-color: #f9f9f9; }
+        body { overflow: hidden; background-color: #f9f9f9; cursor: default; }
 
         /* ================= 极简导航栏 ================= */
         #navbar {
@@ -23,49 +21,45 @@
         .nav-right a:hover { color: #888; }
         .login-btn { border: 1px solid #333; padding: 6px 18px; border-radius: 20px; }
 
-        /* ================= 英雄区域 (底白底黑字) ================= */
-        #hero { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
-        
-        /* 点阵背景 */
-        .bg-dots {
-            position: absolute; width: 100%; height: 100%;
-            background-image: radial-gradient(#d5d5d5 1px, transparent 1px);
-            background-size: 40px 40px; z-index: 1;
+        /* ================= 沉浸式包装器 ================= */
+        #main-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+
+        /* 通用内容排版 */
+        .content-block {
+            text-align: center;
+            transition: transform 0.1s ease-out; 
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: none; z-index: 20;
         }
 
-        .text-content { text-align: center; position: absolute; z-index: 2; pointer-events: none; }
-        h1 { font-size: 5rem; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; color: #111; margin-bottom: 15px; }
-        p { font-size: 1.1rem; color: #666; letter-spacing: 2px; }
+        h1 { font-size: 5.5rem; font-weight: 900; letter-spacing: 5px; margin-bottom: 5px; text-transform: uppercase; }
+        h2 { font-size: 2.5rem; font-weight: 600; letter-spacing: 3px; margin-bottom: 25px; }
+        p { font-size: 1.1rem; letter-spacing: 2px; }
 
-        /* ================= 黑洞层 (顶层黑底白字) ================= */
-        #black-hole {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #111; color: #fff;
-            display: flex; justify-content: center; align-items: center; flex-direction: column;
-            
-            /* 核心魔法：初始状态是一个被裁剪的圆 */
-            clip-path: circle(240px at center);
-            /* 动画贝塞尔曲线：先慢后极快，模拟被吸入的感觉 */
-            transition: clip-path 1.2s cubic-bezier(0.86, 0, 0.07, 1);
-            z-index: 10;
+        .enter-btn { margin-top: 40px; padding: 12px 36px; border-radius: 30px; font-size: 1rem; letter-spacing: 2px; }
+        .ghost-btn { border: 1px solid transparent; color: transparent; background: transparent; }
+
+        /* ================= 1. 底层：白纸黑字 ================= */
+        .layer-bottom { position: absolute; z-index: 1; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        .layer-bottom .content-block h1, .layer-bottom .content-block h2 { color: #111; }
+        .layer-bottom .content-block p { color: #666; }
+        .bg-dots { position: absolute; width: 100%; height: 100%; background-image: radial-gradient(#d5d5d5 1px, transparent 1px); background-size: 40px 40px; z-index: -1; }
+
+        /* ================= 2. 顶层：探照灯遮罩 ================= */
+        .layer-top {
+            position: absolute; z-index: 10; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
+            background-color: #030308; /* 极深的宇宙黑蓝色 */
+            clip-path: circle(220px at 50% 50%);
+            transition: clip-path 0.1s ease-out;
         }
-        
-        /* 触发点击后的展开状态 (圆的半径扩大到足以覆盖整个屏幕) */
-        .expand { clip-path: circle(3000px at center) !important; }
 
-        #black-hole h1 { color: #fff; pointer-events: none; }
-        #black-hole p { color: #aaa; pointer-events: none; margin-bottom: 40px; }
+        /* ✨ 宇宙星空画布 */
+        #space-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
 
-        /* 进入宇宙的按钮 */
-        #enter-btn {
-            padding: 12px 36px; border: 1px solid rgba(255,255,255,0.4); border-radius: 30px;
-            background: transparent; color: #fff; font-size: 1rem; cursor: pointer;
-            transition: all 0.3s ease; letter-spacing: 2px; position: relative; z-index: 20;
-        }
-        #enter-btn:hover { background: #fff; color: #111; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .layer-top .content-block h1, .layer-top .content-block h2, .layer-top .content-block p { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
 
-        /* 通用淡出类 */
-        .fade-out { opacity: 0 !important; pointer-events: none; transition: opacity 0.5s ease; }
+        #real-btn { border: 1px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.3); color: #fff; pointer-events: auto; cursor: pointer; transition: all 0.3s ease; }
+        #real-btn:hover { background: #fff; color: #111; transform: translateY(-3px); box-shadow: 0 0 20px rgba(255,255,255,0.5); }
     </style>
 </head>
 <body>
@@ -78,39 +72,159 @@
         </div>
     </nav>
 
-    <div id="hero">
-        <div class="bg-dots"></div>
-        
-        <div class="text-content">
-            <h1>HELLO, I'M SHR</h1>
-            <p>坐标: 西安 | 学生 · 摄影师 · 音乐鉴赏者</p>
+    <div id="main-wrapper">
+        <div class="layer-bottom">
+            <div class="bg-dots"></div>
+            <div class="content-block" id="bottom-content">
+                <h1>HELLO, I'M SHR</h1>
+                <h2>你好，我是温水</h2>
+                <p>坐标: 西安 | 学生 · 摄影师 · 音乐鉴赏者</p>
+                <button class="enter-btn ghost-btn">进入宇宙探索</button>
+            </div>
         </div>
 
-        <div id="black-hole">
-            <h1>你好，我是温水</h1>
-            <p>坐标: 西安 | 学生 · 摄影师 · 音乐鉴赏者</p>
-            <button id="enter-btn">进入宇宙探索</button>
+        <div class="layer-top" id="flashlight-mask">
+            <canvas id="space-canvas"></canvas>
+            <div class="content-block" id="top-content">
+                <h1>HELLO, I'M SHR</h1>
+                <h2>你好，我是温水</h2>
+                <p>坐标: 西安 | 学生 · 摄影师 · 音乐鉴赏者</p>
+                <button class="enter-btn" id="real-btn">进入宇宙探索</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const enterBtn = document.getElementById('enter-btn');
-        const blackHole = document.getElementById('black-hole');
+        const flashlightMask = document.getElementById('flashlight-mask');
+        const bottomContent = document.getElementById('bottom-content');
+        const topContent = document.getElementById('top-content');
+        const realBtn = document.getElementById('real-btn');
         const navbar = document.getElementById('navbar');
+        let isExpanding = false;
 
-        enterBtn.addEventListener('click', () => {
-            // 1. 隐藏按钮和导航栏，营造沉浸感
-            enterBtn.classList.add('fade-out');
-            navbar.classList.add('fade-out');
-            
-            // 2. 触发黑洞吞噬屏幕的动画
-            blackHole.classList.add('expand');
+        // ================= 鼠标互动与视差 =================
+        document.addEventListener('mousemove', (e) => {
+            if (isExpanding) return;
+            const x = e.clientX, y = e.clientY;
+            flashlightMask.style.clipPath = `circle(220px at ${x}px ${y}px)`;
 
-            // 3. 等待黑暗完全降临，准备跳转到宇宙页面！
-            setTimeout(() => {
-                window.location.href = 'universe.html'; 
-            }, 1200); // 1.2秒后执行跳转
+            const offsetX = (x - window.innerWidth / 2) / 40;
+            const offsetY = (y - window.innerHeight / 2) / 30;
+            const transformStr = `translate(${offsetX}px, ${offsetY}px)`;
+            bottomContent.style.transform = transformStr;
+            topContent.style.transform = transformStr;
         });
+
+        realBtn.addEventListener('click', (e) => {
+            isExpanding = true; 
+            realBtn.style.opacity = '0';
+            navbar.style.opacity = '0';
+            flashlightMask.style.transition = 'clip-path 1.5s cubic-bezier(0.86, 0, 0.07, 1)';
+            flashlightMask.style.clipPath = `circle(3000px at ${e.clientX}px ${e.clientY}px)`;
+            setTimeout(() => { window.location.href = 'universe.html'; }, 1400); 
+        });
+
+        // ================= ✨ 修复版：高级 Canvas 星空引擎 ✨ =================
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let stars = [], meteors = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 繁星类
+        class Star {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.r = Math.random() * 1.2;
+                this.alpha = Math.random();
+                this.alphaChange = (Math.random() * 0.02) - 0.01;
+            }
+            draw() {
+                this.alpha += this.alphaChange;
+                if(this.alpha <= 0.1 || this.alpha >= 0.8) this.alphaChange *= -1;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        // 🚀 修复版：极长拖尾淡紫流星类
+        class Meteor {
+            constructor() {
+                this.reset();
+                // 初始时让一部分流星直接在屏幕里出现，不用等
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+            }
+            reset() {
+                // 从屏幕上方或右侧外围生成
+                this.x = Math.random() * width + 200; 
+                this.y = (Math.random() * height) - height; 
+                
+                // 向左下方缓慢移动 (X负数向左，Y正数向下)
+                const speed = Math.random() * 1.5 + 0.5; // 速度 0.5 - 2，非常缓慢
+                this.vx = -speed * 2.5; 
+                this.vy = speed * 1.5;      
+                
+                this.length = Math.random() * 60 + 50; // 超大拖尾系数，制造拉长感
+                this.opacity = 0; 
+                this.fadeIn = true;
+            }
+            draw() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 物理淡入淡出
+                if (this.fadeIn) {
+                    this.opacity += 0.015;
+                    if (this.opacity >= 0.8) this.fadeIn = false;
+                } else {
+                    this.opacity -= 0.002; // 淡出极慢，配合拖尾
+                }
+
+                // 计算拖尾起点（顺着速度的反方向拉长）
+                const tailX = this.x - this.vx * this.length;
+                const tailY = this.y - this.vy * this.length;
+
+                // 绘制渐变淡紫色光束
+                const gradient = ctx.createLinearGradient(this.x, this.y, tailX, tailY);
+                gradient.addColorStop(0, `rgba(210, 160, 255, ${this.opacity})`); // 明亮紫色头部
+                gradient.addColorStop(0.2, `rgba(160, 100, 255, ${this.opacity * 0.6})`); // 过渡紫
+                gradient.addColorStop(1, 'rgba(160, 100, 255, 0)'); // 透明尾巴
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(tailX, tailY);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2; // 线条稍微加粗增加光晕感
+                ctx.stroke();
+
+                // 飞出屏幕左下方或者完全透明后，重新生成
+                if (this.opacity <= 0 || this.x < -1000 || this.y > height + 1000) {
+                    this.reset();
+                }
+            }
+        }
+
+        // 初始化
+        for(let i=0; i<300; i++) stars.push(new Star());
+        for(let i=0; i<6; i++) meteors.push(new Meteor()); // 增加到 6 颗流星交替划过
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            stars.forEach(s => s.draw());
+            meteors.forEach(m => m.draw());
+            requestAnimationFrame(animate);
+        }
+        animate();
     </script>
 
 </body>
