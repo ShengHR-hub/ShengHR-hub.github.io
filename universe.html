@@ -2,22 +2,29 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>S.H.R | 宇宙中枢</title>
     <style>
-        /* 消除默认边距，让画布全屏 */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        /* 消除默认边距，防止移动端滚动 */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: #000; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* 禁用浏览器默认的触摸手势（如双击缩放） */
+        }
         
         #galaxy-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* 顶部标题 */
+        /* 顶部标题 - 默认PC端样式 */
         #main-title {
             position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
             color: #fff; font-size: 2rem; font-weight: 300; letter-spacing: 10px;
             z-index: 10; pointer-events: none; text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            white-space: nowrap; /* 强制不换行 */
+            transition: all 0.3s ease;
         }
 
-        /* 返回主页的按钮 */
+        /* 返回主页按钮 - 默认PC端样式 */
         .back-btn {
             position: absolute; top: 40px; left: 50px; color: rgba(255,255,255,0.6);
             text-decoration: none; font-size: 14px; letter-spacing: 2px;
@@ -25,6 +32,21 @@
             padding: 8px 20px; border-radius: 20px;
         }
         .back-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+
+        /* ================= ✨ 核心：移动端专属适配 ================= */
+        @media screen and (max-width: 768px) {
+            #main-title {
+                top: 80px; /* 往下移，避免和返回按钮打架 */
+                font-size: 1.2rem; /* 字体缩小 */
+                letter-spacing: 5px; /* 字间距缩小 */
+            }
+            .back-btn {
+                top: 20px; /* 靠边一点 */
+                left: 20px;
+                padding: 6px 15px;
+                font-size: 12px;
+            }
+        }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -38,11 +60,8 @@
     <canvas id="galaxy-canvas"></canvas>
 
     <script>
-        console.log("Sober-Galaxy：单文件融合模式已开启，空链接防跳机制已激活！");
+        console.log("Sober-Galaxy：移动端全面适配版已加载！");
 
-        // ==========================================
-        // 1. 基础环境设置
-        // ==========================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#000000'); 
 
@@ -73,9 +92,7 @@
         };
         const softTexture = createSoftTexture();
 
-        // ==========================================
-        // 2. 🌌 宇宙背景：繁星
-        // ==========================================
+        // 宇宙背景
         let starMaterial;
         const createStars = () => {
             const starGeo = new THREE.BufferGeometry();
@@ -119,9 +136,7 @@
         };
         createStars();
 
-        // ==========================================
-        // 3. 🪐 星系制造工厂
-        // ==========================================
+        // 星系制造工厂
         const galaxies = []; 
         const hitboxes = []; 
 
@@ -170,8 +185,8 @@
             scene.add(system);
             galaxies.push(system);
 
-            // --- 创建隐形碰撞盒 ---
-            const hitboxGeo = new THREE.SphereGeometry(3.5 * scale, 16, 16);
+            // 稍微把碰撞盒变大一点，让手机上更好点中
+            const hitboxGeo = new THREE.SphereGeometry(4.5 * scale, 16, 16);
             const hitboxMat = new THREE.MeshBasicMaterial({ visible: false }); 
             const hitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
             hitbox.position.set(x, y, z);
@@ -181,9 +196,7 @@
             hitboxes.push(hitbox);
         };
 
-        // ==========================================
-        // 4. 🛸 放置宇宙群落与定义跳转链接
-        // ==========================================
+        // 放置宇宙群落
         createGalaxy({
             name: '摄影视界', x: 0, y: 0, z: 0, count: 55000, scale: 1.0, 
             colorInside: '#9b59b6', colorOutside: '#f39c12', tiltX: Math.PI * 0.12, tiltZ: Math.PI * 0.05,
@@ -192,7 +205,7 @@
         createGalaxy({
             name: '动态足迹', x: -15, y: -6, z: -15, count: 35000, scale: 0.6, 
             colorInside: '#00d2ff', colorOutside: '#3a7bd5', tiltX: -Math.PI * 0.1, tiltZ: -Math.PI * 0.15,
-            link: '' // ✨ 这里：已经把登录页面的链接删除了，留空！
+            link: '' 
         });
         createGalaxy({
             name: '代码与热爱', x: 18, y: 8, z: -25, count: 30000, scale: 0.5, 
@@ -206,51 +219,74 @@
         });
 
         // ==========================================
-        // 5. 🚀 射线检测 (Raycaster) 与交互逻辑
+        // ✨ 核心重构：区分滑动与点击的交互逻辑
         // ==========================================
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         const title = document.getElementById('main-title');
+        
         let hoveredHitbox = null;
+        let pointerDownPos = { x: 0, y: 0 }; // 记录按下的位置
 
+        // 1. 处理鼠标悬停 (仅对电脑生效，手机没有悬停概念)
         window.addEventListener('pointermove', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         });
 
-        window.addEventListener('click', () => {
-            if (hoveredHitbox && controls.enabled) {
-                const data = hoveredHitbox.userData;
-                
-                controls.enabled = false;
-                gsap.to(title, {
-                    opacity: 0, y: -30, duration: 0.4,
-                    onComplete: () => {
-                        title.innerText = data.name + " 接入中...";
-                        gsap.to(title, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
-                    }
-                });
+        // 2. 记录手指/鼠标按下的瞬间坐标
+        window.addEventListener('pointerdown', (event) => {
+            pointerDownPos.x = event.clientX;
+            pointerDownPos.y = event.clientY;
+        });
 
-                gsap.to(controls.target, { x: data.x, y: data.y, z: data.z, duration: 2.5, ease: "power3.inOut" });
-                gsap.to(camera.position, {
-                    x: data.x, y: data.y + 3.0, z: data.z + 1.0,
-                    duration: 2.5, ease: "power3.inOut",
-                    onUpdate: () => controls.update(),
-                    onComplete: () => {
-                        // ✨ 核心修改：如果星系有链接，就跳转；如果没有，就显示建设中，然后把镜头控制权还给你！
-                        if (data.link) {
-                            window.location.href = data.link; 
-                        } else {
-                            title.innerText = data.name + " (建设中...)";
+        // 3. 抬起时判定：如果坐标没怎么变，说明是“点击”，如果坐标变了很多，说明是“拖拽视角”
+        window.addEventListener('pointerup', (event) => {
+            const dist = Math.abs(event.clientX - pointerDownPos.x) + Math.abs(event.clientY - pointerDownPos.y);
+            
+            // 如果移动距离小于 15 像素，判定为有效的点击！
+            if (dist < 15 && controls.enabled) {
+                // 更新准心坐标
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(hitboxes);
+
+                if (intersects.length > 0) {
+                    const data = intersects[0].object.userData;
+                    
+                    controls.enabled = false; // 动画期间禁止拖拽
+                    
+                    gsap.to(title, {
+                        opacity: 0, y: -30, duration: 0.4,
+                        onComplete: () => {
+                            title.innerText = data.name + " 接入中...";
+                            gsap.to(title, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
                         }
-                        controls.enabled = true; // 无论跳不跳，都恢复鼠标控制
-                    }
-                });
+                    });
+
+                    // 镜头飞梭动画
+                    gsap.to(controls.target, { x: data.x, y: data.y, z: data.z, duration: 2.5, ease: "power3.inOut" });
+                    gsap.to(camera.position, {
+                        x: data.x, y: data.y + 4.0, z: data.z + 1.5, // 手机端视角稍微拉高拉远一点
+                        duration: 2.5, ease: "power3.inOut",
+                        onUpdate: () => controls.update(),
+                        onComplete: () => {
+                            if (data.link) {
+                                window.location.href = data.link; 
+                            } else {
+                                title.innerText = data.name + " (建设中...)";
+                            }
+                            controls.enabled = true; // 归还控制权
+                        }
+                    });
+                }
             }
         });
 
         // ==========================================
-        // 6. 动画循环
+        // 渲染循环
         // ==========================================
         const clock = new THREE.Clock();
 
@@ -260,6 +296,7 @@
             
             if (starMaterial) starMaterial.uniforms.uTime.value = elapsedTime;
 
+            // 电脑端悬停呼吸特效
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(hitboxes);
 
@@ -276,6 +313,7 @@
                 hoveredHitbox = null;
             }
 
+            // 星系自转
             galaxies.forEach((galaxy, index) => {
                 const speed = 0.05 * (index % 2 === 0 ? 1 : -0.8);
                 galaxy.rotation.y = elapsedTime * speed;
@@ -285,6 +323,7 @@
             renderer.render(scene, camera);
         }
 
+        // 窗口尺寸变化自适应 (横竖屏切换)
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
