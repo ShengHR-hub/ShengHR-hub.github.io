@@ -2,394 +2,328 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sober Resonance - 音乐星球</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S.H.R | 宇宙中枢</title>
     <style>
-        /* ================= UI 与 排版 ================= */
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #030303; /* 极致的深空黑 */
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #ffffff;
+        /* 消除默认边距，防止移动端滚动 */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: #000; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* 禁用浏览器默认的触摸手势（如双击缩放） */
         }
-
-        #ui-container {
-            position: absolute;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* 让鼠标事件穿透到 3D 画布 */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 40px;
-            box-sizing: border-box;
-        }
-
-        .back-btn {
-            pointer-events: auto;
-            text-decoration: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 13px;
-            letter-spacing: 2px;
-            transition: color 0.3s ease;
-        }
-
-        .back-btn:hover {
-            color: #ffffff;
-        }
-
-        /* 沉浸式启动遮罩 */
-        .play-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            transition: opacity 1.5s ease;
-        }
-
-        .play-btn {
-            cursor: pointer;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.8);
-            padding: 16px 40px;
-            font-size: 12px;
-            letter-spacing: 6px;
-            border-radius: 40px;
-            transition: all 0.4s ease;
-        }
-
-        .play-btn:hover {
-            border-color: #ffffff;
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-        }
-
-        /* 底部控制区 (包含歌曲信息和按钮) */
-        .bottom-panel {
-            pointer-events: auto; /* 恢复底部区域的鼠标交互 */
-            text-align: center;
-            opacity: 0; /* 默认隐藏 */
-            transition: opacity 2s ease;
-            transform: translateY(-20px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .song-info {
-            font-size: 11px;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        .song-title {
-            color: #ffffff;
-            font-size: 16px;
-            letter-spacing: 2px;
-            margin-top: 5px;
-            font-weight: 300;
-        }
-
-        /* 极简音乐控制按钮 */
-        .music-controls {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-
-        .ctrl-btn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            cursor: pointer;
+        
+        #galaxy-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* 顶部标题 - 默认PC端样式 */
+        #main-title {
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+            color: #fff; font-size: 2rem; font-weight: 300; letter-spacing: 10px;
+            z-index: 10; pointer-events: none; text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            white-space: nowrap; /* 强制不换行 */
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
         }
 
-        .ctrl-btn:hover {
-            color: #ffffff;
-            transform: scale(1.1);
+        /* 返回主页按钮 - 默认PC端样式 */
+        .back-btn {
+            position: absolute; top: 40px; left: 50px; color: rgba(255,255,255,0.6);
+            text-decoration: none; font-size: 14px; letter-spacing: 2px;
+            z-index: 10; transition: 0.3s; border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 20px; border-radius: 20px;
         }
+        .back-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        .ctrl-btn.play-pause svg {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
-        }
-        .ctrl-btn.skip svg {
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
-        }
-
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1; /* 置于底层 */
+        /* ================= ✨ 核心：移动端专属适配 ================= */
+        @media screen and (max-width: 768px) {
+            #main-title {
+                top: 80px; /* 往下移，避免和返回按钮打架 */
+                font-size: 1.2rem; /* 字体缩小 */
+                letter-spacing: 5px; /* 字间距缩小 */
+            }
+            .back-btn {
+                top: 20px; /* 靠边一点 */
+                left: 20px;
+                padding: 6px 15px;
+                font-size: 12px;
+            }
         }
     </style>
-</head>
-<body>
-
-    <canvas id="webgl-canvas"></canvas>
-
-    <div id="ui-container">
-        <a href="universe.html" class="back-btn">← 返回宇宙中枢</a>
-        
-        <div class="bottom-panel" id="bottom-panel">
-            <div class="song-info">
-                NOW RESONATING
-                <div class="song-title">病变 - 温水专属</div>
-            </div>
-            
-            <div class="music-controls">
-                <button class="ctrl-btn skip" id="prev-btn" title="上一首">
-                    <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                </button>
-                <button class="ctrl-btn play-pause" id="toggle-btn" title="暂停/播放">
-                    <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                    <svg id="icon-play" viewBox="0 0 24 24" style="display:none;"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-                <button class="ctrl-btn skip" id="next-btn" title="下一首">
-                    <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="play-overlay" id="play-overlay">
-        <button class="play-btn" id="play-btn">INITIATE RESONANCE</button>
-    </div>
-
-    <audio id="audio-source" src="music/病变.mp3" crossorigin="anonymous"></audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <a href="index.html" class="back-btn">← 离开宇宙</a>
+    <h1 id="main-title">选择你的目标星系</h1>
+    <canvas id="galaxy-canvas"></canvas>
 
     <script>
-        // ==========================================
-        // 1. 基础 3D 场景配置
-        // ==========================================
-        const canvas = document.getElementById('webgl-canvas');
+        console.log("Sober-Galaxy：移动端全面适配版已加载！");
+
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+        scene.background = new THREE.Color('#000000'); 
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 15, 30);
-        
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        camera.position.set(0, 5.5, 2.5); 
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.querySelector('#galaxy-canvas'),
+            antialias: true
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // 🌟 新增：配置鼠标拖拽缩放控制器
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; // 开启阻尼带来丝滑的拖拽感
+        controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.maxDistance = 60; // 最远缩放距离
-        controls.minDistance = 5;  // 最近缩放距离
+        controls.enablePan = false;
 
-        // ==========================================
-        // 2. 构建 3D 吸积盘 (粒子星环)
-        // ==========================================
-        const particleCount = 10000;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const basePositions = new Float32Array(particleCount * 3); // 🌟 存储初始位置，用于计算波浪
-        const colors = new Float32Array(particleCount * 3);
+        const createSoftTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 32, 32);
+            return new THREE.CanvasTexture(canvas);
+        };
+        const softTexture = createSoftTexture();
 
-        const colorInside = new THREE.Color('#3a7bd5'); // 深海蓝
-        const colorOutside = new THREE.Color('#9b59b6'); // 淡紫
-
-        for (let i = 0; i < particleCount; i++) {
-            const radius = 8 + Math.random() * 14;
-            const theta = Math.random() * Math.PI * 2;
+        // 宇宙背景
+        let starMaterial;
+        const createStars = () => {
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 4000; 
+            const starPos = new Float32Array(starCount * 3);
+            const starPhases = new Float32Array(starCount); 
             
-            // 计算粒子坐标
-            const x = radius * Math.cos(theta);
-            const y = (Math.random() - 0.5) * 0.5; // 初始Y轴尽量扁平
-            const z = radius * Math.sin(theta);
+            for (let i = 0; i < starCount; i++) {
+                const r = 40 + Math.random() * 60;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+                starPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                starPos[i*3+2] = r * Math.cos(phi);
+                starPhases[i] = Math.random() * Math.PI * 2; 
+            }
+            
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+            starGeo.setAttribute('aPhase', new THREE.BufferAttribute(starPhases, 1));
+            
+            starMaterial = new THREE.ShaderMaterial({
+                uniforms: { uTime: { value: 0 }, uTexture: { value: softTexture } },
+                vertexShader: `
+                    attribute float aPhase; varying float vAlpha; uniform float uTime;
+                    void main() {
+                        vAlpha = 0.3 + 0.7 * abs(sin(uTime * 0.8 + aPhase));
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        gl_PointSize = 5.0; gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D uTexture; varying float vAlpha;
+                    void main() {
+                        vec4 texColor = texture2D(uTexture, gl_PointCoord);
+                        gl_FragColor = vec4(1.0, 1.0, 1.0, texColor.a * vAlpha);
+                    }
+                `,
+                transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            scene.add(new THREE.Points(starGeo, starMaterial));
+        };
+        createStars();
 
-            positions[i * 3] = x;
-            positions[i * 3 + 1] = y;
-            positions[i * 3 + 2] = z;
+        // 星系制造工厂
+        const galaxies = []; 
+        const hitboxes = []; 
 
-            // 备份初始坐标
-            basePositions[i * 3] = x;
-            basePositions[i * 3 + 1] = y;
-            basePositions[i * 3 + 2] = z;
+        const createGalaxy = (options) => {
+            const { name, x, y, z, count, scale, colorInside, colorOutside, tiltX, tiltZ, link } = options;
+            
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const cInside = new THREE.Color(colorInside);
+            const cOutside = new THREE.Color(colorOutside);
+            const gaussianRandom = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.5;
 
-            // 颜色插值
-            const mixRatio = (radius - 8) / 14;
-            const mixedColor = colorInside.clone().lerp(colorOutside, mixRatio);
-            colors[i * 3] = mixedColor.r;
-            colors[i * 3 + 1] = mixedColor.g;
-            colors[i * 3 + 2] = mixedColor.b;
-        }
+            for (let i = 0; i < count; i++) {
+                const i3 = i * 3; let px, py, pz; let mixedColor = new THREE.Color();
+                if (Math.random() < 0.55) {
+                    const radius = 2.4 * scale; const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos((Math.random() * 2) - 1);
+                    const r = radius * Math.cbrt(Math.random()) + gaussianRandom() * 0.4 * scale; 
+                    px = r * Math.sin(phi) * Math.cos(theta); py = r * Math.sin(phi) * Math.sin(theta); pz = r * Math.cos(phi);
+                    mixedColor = cInside.clone().lerp(cOutside, Math.random() * 0.4);
+                } else {
+                    const innerRadius = 3.2 * scale; const outerRadius = 8.0 * scale;
+                    const mixRatio = Math.pow(Math.random(), 1.5); 
+                    const r = innerRadius + mixRatio * (outerRadius - innerRadius);
+                    const theta = Math.random() * Math.PI * 2;
+                    const thickness = (1.0 * (1.0 - mixRatio) + 0.1) * scale; 
+                    py = gaussianRandom() * thickness * 2.5; px = r * Math.cos(theta); pz = r * Math.sin(theta);
+                    mixedColor = cOutside.clone().lerp(cInside, mixRatio * 0.6);
+                    const darken = 1.0 - Math.min(Math.abs(py) / thickness, 1.0) * 0.5; mixedColor.multiplyScalar(darken);
+                }
+                positions[i3] = px; positions[i3 + 1] = py; positions[i3 + 2] = pz;
+                colors[i3] = mixedColor.r; colors[i3 + 1] = mixedColor.g; colors[i3 + 2] = mixedColor.b;
+            }
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        const material = new THREE.PointsMaterial({
-            size: 0.12,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
+            const material = new THREE.PointsMaterial({
+                size: 0.05 * Math.max(scale, 0.6), sizeAttenuation: true, depthWrite: false, 
+                blending: THREE.AdditiveBlending, vertexColors: true, map: softTexture, transparent: true, opacity: 0.9
+            });
 
-        const starRing = new THREE.Points(geometry, material);
-        scene.add(starRing);
+            const system = new THREE.Points(geometry, material);
+            system.position.set(x, y, z); system.rotation.x = tiltX; system.rotation.z = tiltZ;
+            scene.add(system);
+            galaxies.push(system);
 
-        // ==========================================
-        // 3. Web Audio API 音频解析
-        // ==========================================
-        let audioContext, analyser, dataArray;
-        const audioElement = document.getElementById('audio-source');
-        let isResonating = false;
-
-        const initAudio = () => {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            const source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-
-            analyser.fftSize = 256; 
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            // 稍微把碰撞盒变大一点，让手机上更好点中
+            const hitboxGeo = new THREE.SphereGeometry(4.5 * scale, 16, 16);
+            const hitboxMat = new THREE.MeshBasicMaterial({ visible: false }); 
+            const hitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
+            hitbox.position.set(x, y, z);
+            
+            hitbox.userData = { name, x, y, z, link, system: system }; 
+            scene.add(hitbox);
+            hitboxes.push(hitbox);
         };
 
-        // ==========================================
-        // 4. UI 交互与按钮控制
-        // ==========================================
-        const playBtn = document.getElementById('play-btn');
-        const overlay = document.getElementById('play-overlay');
-        const bottomPanel = document.getElementById('bottom-panel');
-        
-        // 音乐控制按钮
-        const toggleBtn = document.getElementById('toggle-btn');
-        const iconPlay = document.getElementById('icon-play');
-        const iconPause = document.getElementById('icon-pause');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-
-        // 启动星球
-        playBtn.addEventListener('click', () => {
-            if (!audioContext) initAudio();
-            if (audioContext.state === 'suspended') audioContext.resume();
-            
-            audioElement.play();
-            isResonating = true;
-
-            overlay.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; }, 1500);
-            bottomPanel.style.opacity = '1';
+        // 放置宇宙群落
+        createGalaxy({
+            name: '摄影视界', x: 0, y: 0, z: 0, count: 55000, scale: 1.0, 
+            colorInside: '#9b59b6', colorOutside: '#f39c12', tiltX: Math.PI * 0.12, tiltZ: Math.PI * 0.05,
+            link: 'photography.html'
+        });
+        createGalaxy({
+            name: '动态足迹', x: -15, y: -6, z: -15, count: 35000, scale: 0.6, 
+            colorInside: '#00d2ff', colorOutside: '#3a7bd5', tiltX: -Math.PI * 0.1, tiltZ: -Math.PI * 0.15,
+            link: '' 
+        });
+        createGalaxy({
+            name: '代码与热爱', x: 18, y: 8, z: -25, count: 30000, scale: 0.5, 
+            colorInside: '#ff416c', colorOutside: '#ff4b2b', tiltX: Math.PI * 0.2, tiltZ: -Math.PI * 0.2,
+            link: 'code.html'
+        });
+        createGalaxy({
+            name: '优美旋律', x: -10, y: 14, z: -35, count: 40000, scale: 0.8, 
+            colorInside: '#11998e', colorOutside: '#38ef7d', tiltX: Math.PI * 0.05, tiltZ: Math.PI * 0.25,
+            link: 'music-planet.html'
         });
 
-        // 暂停/播放 切换逻辑
-        toggleBtn.addEventListener('click', () => {
-            if (audioElement.paused) {
-                audioElement.play();
-                iconPlay.style.display = 'none';
-                iconPause.style.display = 'block';
-            } else {
-                audioElement.pause();
-                iconPause.style.display = 'none';
-                iconPlay.style.display = 'block';
+        // ==========================================
+        // ✨ 核心重构：区分滑动与点击的交互逻辑
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const title = document.getElementById('main-title');
+        
+        let hoveredHitbox = null;
+        let pointerDownPos = { x: 0, y: 0 }; // 记录按下的位置
+
+        // 1. 处理鼠标悬停 (仅对电脑生效，手机没有悬停概念)
+        window.addEventListener('pointermove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // 2. 记录手指/鼠标按下的瞬间坐标
+        window.addEventListener('pointerdown', (event) => {
+            pointerDownPos.x = event.clientX;
+            pointerDownPos.y = event.clientY;
+        });
+
+        // 3. 抬起时判定：如果坐标没怎么变，说明是“点击”，如果坐标变了很多，说明是“拖拽视角”
+        window.addEventListener('pointerup', (event) => {
+            const dist = Math.abs(event.clientX - pointerDownPos.x) + Math.abs(event.clientY - pointerDownPos.y);
+            
+            // 如果移动距离小于 15 像素，判定为有效的点击！
+            if (dist < 15 && controls.enabled) {
+                // 更新准心坐标
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(hitboxes);
+
+                if (intersects.length > 0) {
+                    const data = intersects[0].object.userData;
+                    
+                    controls.enabled = false; // 动画期间禁止拖拽
+                    
+                    gsap.to(title, {
+                        opacity: 0, y: -30, duration: 0.4,
+                        onComplete: () => {
+                            title.innerText = data.name + " 接入中...";
+                            gsap.to(title, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
+                        }
+                    });
+
+                    // 镜头飞梭动画
+                    gsap.to(controls.target, { x: data.x, y: data.y, z: data.z, duration: 2.5, ease: "power3.inOut" });
+                    gsap.to(camera.position, {
+                        x: data.x, y: data.y + 4.0, z: data.z + 1.5, // 手机端视角稍微拉高拉远一点
+                        duration: 2.5, ease: "power3.inOut",
+                        onUpdate: () => controls.update(),
+                        onComplete: () => {
+                            if (data.link) {
+                                window.location.href = data.link; 
+                            } else {
+                                title.innerText = data.name + " (建设中...)";
+                            }
+                            controls.enabled = true; // 归还控制权
+                        }
+                    });
+                }
             }
         });
 
-        // 上一首/下一首 (目前作为占位符，如果以后你加了多首歌可以在这里写切换路径的逻辑)
-        prevBtn.addEventListener('click', () => {
-            console.log("上一首：准备接入播放列表逻辑");
-            // 提示：可以建一个包含音乐路径的数组，点击时改变 audioElement.src 并 play()
-        });
-        nextBtn.addEventListener('click', () => {
-            console.log("下一首：准备接入播放列表逻辑");
-        });
-
         // ==========================================
-        // 5. 动画循环与 🌟 波浪算法核心
+        // 渲染循环
         // ==========================================
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            // 保持控制器更新
-            controls.update();
+            const elapsedTime = clock.getElapsedTime();
             
-            // 整体缓慢自转
-            starRing.rotation.y = time * 0.05;
+            if (starMaterial) starMaterial.uniforms.uTime.value = elapsedTime;
 
-            // 获取粒子位置数组
-            const posAttribute = geometry.attributes.position;
-            const posArray = posAttribute.array;
+            // 电脑端悬停呼吸特效
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(hitboxes);
 
-            if (isResonating && analyser && !audioElement.paused) {
-                analyser.getByteFrequencyData(dataArray);
-
-                // 🌟 遍历每个粒子，计算波浪高度
-                for (let i = 0; i < particleCount; i++) {
-                    const idx = i * 3;
-                    const basePathX = basePositions[idx];
-                    const basePathY = basePositions[idx + 1];
-                    const basePathZ = basePositions[idx + 2];
-
-                    // 计算该粒子距离中心的半径距离
-                    const dist = Math.sqrt(basePathX * basePathX + basePathZ * basePathZ);
-                    
-                    // 将粒子的位置映射到音频频率的索引上 (内圈对应低音，外圈对应高音)
-                    const dataIndex = Math.floor((dist - 8) / 14 * (dataArray.length * 0.6)); 
-                    const audioValue = dataArray[dataIndex] || 0;
-
-                    // 🌊 核心数学公式：原Y轴 + 正弦波(距离-时间) * 音频强度
-                    const waveHeight = Math.sin(dist * 1.5 - time * 3); // 生成向外扩散的水波纹
-                    const bounce = (audioValue / 255) * 3; // 音量越大，弹跳越高
-
-                    // 更新该粒子的 Y 轴坐标
-                    posArray[idx + 1] = basePathY + waveHeight * bounce;
-                }
-                
-                // 通知 GPU 重新渲染粒子的位置
-                posAttribute.needsUpdate = true;
-                
-                // 随着鼓点整体闪烁呼吸
-                material.opacity = 0.5 + (dataArray[2] / 255) * 0.5; 
-
-            } else {
-                // 如果暂停了，粒子缓慢恢复平稳
-                for (let i = 0; i < particleCount; i++) {
-                    const idx = i * 3;
-                    // 逐渐回归初始高度，带有极其微弱的静态呼吸
-                    posArray[idx + 1] = THREE.MathUtils.lerp(posArray[idx + 1], basePositions[idx + 1] + Math.sin(time + i)*0.1, 0.05);
-                }
-                posAttribute.needsUpdate = true;
-                material.opacity = 0.6;
+            if (hoveredHitbox) {
+                gsap.to(hoveredHitbox.userData.system.scale, { x: 1, y: 1, z: 1, duration: 0.4, ease: "power2.out" });
             }
 
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+                hoveredHitbox = intersects[0].object;
+                gsap.to(hoveredHitbox.userData.system.scale, { x: 1.08, y: 1.08, z: 1.08, duration: 0.4, ease: "power2.out" });
+            } else {
+                document.body.style.cursor = 'default';
+                hoveredHitbox = null;
+            }
+
+            // 星系自转
+            galaxies.forEach((galaxy, index) => {
+                const speed = 0.05 * (index % 2 === 0 ? 1 : -0.8);
+                galaxy.rotation.y = elapsedTime * speed;
+            });
+
+            controls.update();
             renderer.render(scene, camera);
         }
 
+        // 窗口尺寸变化自适应 (横竖屏切换)
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
